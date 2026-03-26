@@ -44,7 +44,7 @@ def login():
     cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
     user = cursor.fetchone()
 
-    if user and bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
+    if user and bcrypt.checkpw(password.encode('utf-8'), user['password']):
         return jsonify({"message": "Login successful", "user_id": user['id']})
     else:
         return jsonify({"error": "Invalid credentials"})
@@ -89,4 +89,3 @@ def delete_task(task_id):
 
 if __name__ == '__main__':
     app.run(debug=True)
-
