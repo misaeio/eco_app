@@ -1,6 +1,0 @@
-#created to ignore python cache files -- would not let me push without doing this -AA
-__pycache__/
-*.pyc
-
-
-.env
