@@ -1,5 +1,25 @@
 const backendURL = "http://127.0.0.1:5000";
+//Welcome message about a fact 
+ const ecoFacts = [
+    "Recycling one aluminum can saves enough energy to run a TV for 3 hours.",
+    "About 8 million tons of plastic enter the ocean each year.",
+    "Turning off the tap while brushing your teeth can save 8 gallons of water daily.",
+    "Trees absorb about 48 pounds of CO2 per year.",
+    "LED bulbs use up to 75% less energy than traditional bulbs.",
+    "A single reusable bag can replace over 700 plastic bags in its lifetime.",
+    "Glass can be recycled endlessly without losing quality.",
+    "Food waste makes up nearly 30% of what we throw away.",
+    "Biking instead of driving reduces carbon emissions significantly.",
+    "Planting more trees is one of the cheapest ways to fight climate change."
+];
 
+//function to set random fact on page load
+function setRandomFact() {
+    const factElement = document.getElementById("eco-fact");
+    const randomIndex = Math.floor(Math.random() * ecoFacts.length);
+    factElement.textContent = ecoFacts[randomIndex];
+}
+window.onload = setRandomFact;
 // SIGNUP
 function signup() {
     const username = document.getElementById('signup-username').value;
