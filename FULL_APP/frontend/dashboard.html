@@ -3,14 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <title>Eco App Dashboard</title>
-    <link rel="stylesheet" href="Dashboard.css">
+    <link rel="stylesheet" href="style.css">
     <style>
         .tab { display: none; }
         .tab.active { display: block; }
         .tab-buttons button { margin-right: 5px; }
+
+        .post {
+            background: white;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px;
+            width: 300px;
+        }
+
+        .post img {
+            max-width: 100%;
+            margin-top: 10px;
+            border-radius: 6px;
+        }
     </style>
 </head>
 <body>
+
     <h1>Eco App Dashboard</h1>
     <p id="welcome"></p>
 
@@ -23,9 +38,14 @@
     <!-- HOME FEED -->
     <div id="home" class="tab active">
         <h2>Community Feed</h2>
+
+        <!-- POST INPUT -->
         <input type="text" id="new-post" placeholder="What did you do for the environment?">
+        <input type="text" id="new-image" placeholder="Image URL (optional)">
         <button id="post-btn">Post</button>
-        <ul id="feed"></ul>
+
+        <!-- FEED -->
+        <div id="feed"></div>
     </div>
 
     <!-- TASKS -->
@@ -45,5 +65,6 @@
     </div>
 
     <script src="dashboard.js"></script>
+
 </body>
 </html>
