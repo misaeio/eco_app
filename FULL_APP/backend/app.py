@@ -91,16 +91,18 @@ def delete_task(task_id):
 @app.route('/posts', methods=['POST'])
 def create_post():
     data = request.get_json()
-    content = data['content']
+    
     user_id = data['user_id']
+    content = data.get('content', " ")
+    image_url = data.get('image_url', None)
 
     conn = get_connection()
-    if not conn:
-        return jsonify({"error": "DB failed"}), 500
-    
     cursor = conn.cursor()
 
-    cursor.execute("INSERT INTO posts (user_id, content) VALUES (%s, %s)", (user_id, content))
+    cursor.execute("""
+        INSERT INTO posts (user_id, content, image_url)
+        VALUES (%s, %s, %s)
+    """, (user_id, content, image_url))
     conn.commit()
 
     return jsonify({"message": "Post Created"})
@@ -119,6 +121,74 @@ def get_post():
     """)
     posts = cursor.fetchall()
     return jsonify(posts)
+
+@app.route('/posts/<int:post_id>/like', methods=['POST'])
+def like_post(post_id):
+    data = request.get_json()
+    user_id = data['user_id']
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    # prevents duplicate likes
+    cursor.execute(
+        "SELECT * FROM likes WHERE user_id=%s AND post_id=%s",
+        (user_id, post_id)
+    )
+    exists = cursor.fetchone()
+    if exists:
+        return jsonify({"message": "Already liked"})
+
+    cursor.execute(
+        "INSERT INTO likes (user_id, post_id) VALUES (%s, %s)",
+        (user_id, post_id)
+    )
+    
+    conn.commit()
+    return jsonify({"message": "Liked"})
+
+@app.route('/posts/<int:post_id>/likes', methods=['GET'])
+def get_likes(post_id):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute(
+        "SELECT COUNT(*) as count FROM likes WHERE post_id=%s",
+        (post_id,)
+    )
+
+    return jsonify(cursor.fetchone())
+
+@app.route('/posts/<int:post_id>/comments', methods=['POST'])
+def add_comment(post_id):
+    data = request.get_json()
+
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        INSERT INTO comments (post_id, user_id, comment)
+        VALUES (%s, %s, %s)
+    """, (post_id, data['user_id'], data['comment']))
+
+    conn.commit()
+
+    return jsonify(cursor.fetchone())
+
+@app.route('/posts/<int:post_id>/comments', methods=['GET'])
+def get_comments(post_id):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT comments.comment, users.username
+        FROM comments
+        JOIN users ON comments.user_id = users.id
+        WHERE post_id=%s
+        ORDER BY comments.created_at ASC
+    """, (post_id,))
+
+    return jsonify(cursor.fetchall())
+
 
 
 
