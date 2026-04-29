@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Eco App Dashboard</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="dashboard.css">
+
     <style>
         .tab { display: none; }
         .tab.active { display: block; }
@@ -14,7 +15,7 @@
             padding: 10px;
             margin-top: 10px;
             border-radius: 8px;
-            width: 300px;
+            width: 320px;
         }
 
         .post img {
@@ -24,47 +25,74 @@
         }
     </style>
 </head>
+
 <body>
 
-    <h1>Eco App Dashboard</h1>
-    <p id="welcome"></p>
+<h1>Eco App Dashboard</h1>
+<p id="welcome"></p>
 
-    <div class="tab-buttons">
-        <button onclick="showTab('home')">Home Feed</button>
-        <button onclick="showTab('tasks')">Personal Achievements</button>
-        <button onclick="showTab('goals')">Goals</button>
-    </div>
+<div class="tab-buttons">
+    <button onclick="showTab('home')">Home Feed</button>
+    <button onclick="showTab('tasks')">Personal Tasks</button>
+    <button onclick="showTab('goals')">Goals</button>
+    <button onclick="showTab('profile')">Profile</button>
+</div>
 
-    <!-- HOME FEED -->
-    <div id="home" class="tab active">
-        <h2>Community Feed</h2>
+<!-- ================= HOME FEED ================= -->
+<div id="home" class="tab active">
+    <h2>Community Feed</h2>
 
-        <!-- POST INPUT -->
-        <input type="text" id="new-post" placeholder="What did you do for the environment?">
-        <input type="text" id="new-image" placeholder="Image URL (optional)">
-        <button id="post-btn">Post</button>
+    <input type="text" id="new-post" placeholder="What did you do for the environment?">
+    <input type="text" id="new-image" placeholder="Image URL (optional)">
+    <button id="post-btn">Post</button>
 
-        <!-- FEED -->
-        <div id="feed"></div>
-    </div>
+    <div id="feed"></div>
+</div>
 
-    <!-- TASKS -->
-    <div id="tasks" class="tab">
-        <h2>Add a Task</h2>
-        <input type="text" id="new-task" placeholder="New Task">
-        <button id="add-task-btn">Add Task</button>
+<!-- ================= TASKS ================= -->
+<div id="tasks" class="tab">
+    <h2>Add Task</h2>
 
-        <h2>Your Tasks</h2>
-        <ul id="tasks-list"></ul>
-    </div>
+    <input type="text" id="new-task" placeholder="New Task">
+    <button id="add-task-btn">Add Task</button>
 
-    <!-- GOALS -->
-    <div id="goals" class="tab">
-        <h2>Goals</h2>
-        <p>Placeholder for goals</p>
-    </div>
+    <h2>Your Tasks</h2>
+    <ul id="tasks-list"></ul>
+</div>
 
-    <script src="dashboard.js"></script>
+<!-- ================= GOALS ================= -->
+<div id="goals" class="tab">
+    <h2>Goals</h2>
+    <p>Placeholder for goals</p>
+</div>
+
+<!-- ================= PROFILE ================= -->
+<div id="profile" class="tab">
+
+    <!-- PROFILE DISPLAY -->
+    <h2>Profile</h2>
+
+    <img id="profile-pic-display" width="80" height="80" style="border-radius:50%; object-fit:cover;">
+    <h3 id="profile-username-display"></h3>
+    <p id="profile-bio-display"></p>
+
+    <p id="followers">Followers: 0</p>
+    <p id="following">Following: 0</p>
+
+    <hr>
+
+    <!-- PROFILE EDIT -->
+    <h3>Edit Profile</h3>
+
+    <input id="profile-username" placeholder="Username">
+    <input id="profile-bio" placeholder="Bio">
+    <input id="profile-pic" placeholder="Profile Picture URL">
+
+    <button onclick="saveProfile()">Save Profile</button>
+
+</div>
+
+<script src="dashboard.js"></script>
 
 </body>
 </html>
