@@ -187,7 +187,7 @@ def send_email(to_email, token):
         """
     ) 
     try: #DO NOT CHANGE API KEY - WILL BREAK FORGOT PASSWORD FUNCTIONALITY 
-        sg = SendGridAPIClient("api_key_here") #*************API KEY GOES HERE*****************
+        sg = SendGridAPIClient("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") #*************API KEY GOES HERE*****************
         sg.send(message)
     except Exception as error:
         print("Something went wrong with the email!: " + str(error))
