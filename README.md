@@ -59,8 +59,8 @@ cd <repo-folder>
 Or copy and paste all the code from git to your own python ide
 
 INSTALL PYTHON AND DEPENDENCIES
-run 
-pip install -r req_dependencies.txt
+RUN: 
+pip install -r req_dependencies.txt 
 
 
 SET UP MYSQL DATABASE (download mysql if you havent) 
