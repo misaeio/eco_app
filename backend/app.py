@@ -185,9 +185,9 @@ def send_email(to_email, token):
             <a href="{reset_link}">Reset Password</a>
             <p>This link will expire in 1 hour.</p>
         """
-    )
-    try: #DO NOT CHANGE API KEY - WILL BREAK FORGOT PASSWORD FUNCTIONALITY
-        sg = SendGridAPIClient("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")
+    ) 
+    try: #DO NOT CHANGE API KEY - WILL BREAK FORGOT PASSWORD FUNCTIONALITY 
+        sg = SendGridAPIClient("api_key_here") #*************API KEY GOES HERE*****************
         sg.send(message)
     except Exception as error:
         print("Something went wrong with the email!: " + str(error))
