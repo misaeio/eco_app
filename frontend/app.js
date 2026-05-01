@@ -16,8 +16,8 @@ const email_pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 //function to set random fact on page load
 function setRandomFact() {
-    if (!factElement) return;
     const factElement = document.getElementById("eco-fact");
+    if (!factElement) return;
     const randomIndex = Math.floor(Math.random() * ecoFacts.length);
     factElement.textContent = ecoFacts[randomIndex];
 }
