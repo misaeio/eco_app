@@ -10,7 +10,7 @@ def get_connection(): #defines a function called get connection
             host="mysql-2f405199-ecoapp3902026.a.aivencloud.com",
             port=24568,
             user="avnadmin",
-            password="AVNS_Of9688DAoYk7Og9GC8C",
+            password="DBPASSHERE",
             database="eco_app",
             ssl_disabled=False  # keep False because SSL is REQUIRED
         )
