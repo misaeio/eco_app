@@ -73,7 +73,6 @@ function login() {
     .then(res => res.json())
     .then(data => {
         if (data.user_id) {
-            // Success! Store user info or redirect to dashboard
             alert("Login successful!");
             window.location.href = `dashboard.html?user_id=${data.user_id}&username=${encodeURIComponent(data.username)}`;
         } else {
@@ -83,7 +82,7 @@ function login() {
     })
     .catch(err => {
         console.error("Login Error:", err);
-        alert("Could not connect to the server. Is the backend running?");
+        alert("Connection error");
     });
 }
       // FORGOT PASSWORD
@@ -105,14 +104,14 @@ function forgotPassword() {
     .then(data => {
         if (data.message) {
             alert(data.message);
-            // optional redirect back to login page
+            
             window.location.href = "index.html";
         } else {
             alert(data.error);
         }
     });
 }
-//reset password
+//RESET PASSWORD
 function resetPassword() {
     const token = new URLSearchParams(window.location.search).get("token");
     const newPassword = document.getElementById('new-password').value;
