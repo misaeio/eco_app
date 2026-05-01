@@ -59,7 +59,9 @@ cd <repo-folder>
 Or copy and paste all the code from git to your own python ide
 
 INSTALL PYTHON AND DEPENDENCIES
-pip install flask flask-cors bcrypt mysql-connector-python
+run 
+pip install -r req_dependencies.txt
+
 
 SET UP MYSQL DATABASE (download mysql if you havent) 
 Open MySQL (MySQL Workbench, terminal, or whatever you use).
