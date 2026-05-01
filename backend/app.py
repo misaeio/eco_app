@@ -1,14 +1,12 @@
-import re
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from db_config import get_connection
 import bcrypt
-import smtplib
-import uuid
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
-from flask import render_template
+import uuid #random string generator for password reset keys
+import re #for email pattern validation
+from sendgrid import SendGridAPIClient #for sending emails for forgot PW
+from sendgrid.helpers.mail import Mail 
+
 
 app = Flask(__name__)
 CORS(app)
@@ -22,6 +20,7 @@ def home():
 
 #validates email format - throws error if the format is off
 email_pattern = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
+
 
 @app.route('/signup', methods=['POST'])
 def signup():
@@ -91,7 +90,7 @@ def login():
 @app.route('/forgot-password', methods=['POST'])
 def forgot_password():
     data = request.get_json() #gets email from user
-    email = data.get('email')                  
+    email = data.get('username')                  
 
     if not email or not re.match(email_pattern, email): #ensures email is valid format
         return jsonify({"error": "Valid email is required"})
@@ -103,7 +102,7 @@ def forgot_password():
     cursor.execute("SELECT id FROM users WHERE username = %s", (email,))
     user = cursor.fetchone()
 
-        #says link sent even if email doesn't exist (security measure)
+        #states link sent even if email doesn't exist (security measure)
     if not user:
         cursor.close()
         conn.close()
@@ -115,7 +114,7 @@ def forgot_password():
     # Create new verification key and store in DB (contains timer as well, per normal practice)
     token = str(uuid.uuid4())
     
-    cursor.execute("""
+    cursor.execute(""" #db info and timer 
         INSERT INTO password_resets (user_id, token, expires_at)
         VALUES (%s, %s, DATE_ADD(NOW(), INTERVAL 1 HOUR))
     """, (user['id'], token))
@@ -171,7 +170,7 @@ def reset_password():
 #RESET PASSWORD EMAIL SENDER
 def send_email(to_email, token):
     #creates reset link with key attached (user clicks this)
-    reset_link = f"http://127.0.0.1:5500/reset-password.html?token={token}"
+    reset_link = f"http://127.0.0.1:5500/eco_app/FULL_APP/frontend/resetpass.html?token={token}"
 
 #DO NOT CHANGE - handles email sending for forgot pass
 
@@ -251,43 +250,30 @@ def create_post():
     return jsonify({"message": "Post Created"})
 
 #GET POSTS
-@app.route('/posts', methods=['GET'])
-def get_post():
+@app.route("/posts", methods=["GET"])
+def get_posts():
     conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
+    cur = conn.cursor(dictionary=True)
 
-    cursor.execute("""
-        SELECT posts.*, users.username 
-        FROM posts 
-        JOIN users ON posts.user_id = users.id 
-        ORDER BY created_at DESC
+    cur.execute("""
+        SELECT 
+            posts.id,
+            posts.content,
+            posts.image_url,
+            posts.user_id,
+            users.username,
+            users.profile_pic
+        FROM posts
+        JOIN users ON posts.user_id = users.id
+        ORDER BY posts.id DESC
     """)
-    posts = cursor.fetchall()
+
+    posts = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
     return jsonify(posts)
-
-@app.route('/posts/<int:post_id>/like', methods=['POST'])
-def like_post(post_id):
-    data = request.get_json()
-    user_id = data['user_id']
-
-    conn = get_connection()
-    cursor = conn.cursor()
-    # prevents duplicate likes
-    cursor.execute(
-        "SELECT * FROM likes WHERE user_id=%s AND post_id=%s",
-        (user_id, post_id)
-    )
-    exists = cursor.fetchone()
-    if exists:
-        return jsonify({"message": "Already liked"})
-
-    cursor.execute(
-        "INSERT INTO likes (user_id, post_id) VALUES (%s, %s)",
-        (user_id, post_id)
-    )
-    
-    conn.commit()
-    return jsonify({"message": "Liked"})
 
 @app.route('/posts/<int:post_id>/likes', methods=['GET'])
 def get_likes(post_id):
@@ -333,6 +319,88 @@ def get_comments(post_id):
     return jsonify(cursor.fetchall())
 
 
+#GET PROFILE
+@app.route("/profile/<int:user_id>")
+def get_profile(user_id):
+    conn = get_connection()
+    cur = conn.cursor(dictionary=True)
+
+    cur.execute("""
+        SELECT id, username, bio, profile_pic, followers_count, following_count
+        FROM users
+        WHERE id=%s
+    """, (user_id,))
+
+    user = cur.fetchone()
+    conn.close()
+
+    return jsonify(user)
+
+#MAKE USER PROFILE
+app.route('/profile/<int:user_id>', methods = ['PUT'])
+def user_profile(user_id):
+    data = request.get_json
+
+    username = data['username']
+    bio = data['bio']
+    profile_pic = data['profile_pic']
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""UPDATE users
+                   SET username = %s, bio = %s, profile_pic = %s
+                   WHERE id = %s""", 
+                   (username, bio, profile_pic, user_id))
+    
+    conn.commit()
+
+    return jsonify({"message": "Profile Updated"})
+
+#UPDATE PROFILE
+@app.route("/profile", methods=["POST"])
+def update_profile():
+    data = request.get_json()
+
+    user_id = data["user_id"]
+    username = data["username"]
+    bio = data["bio"]
+    profile_pic = data["profile_pic"]
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE users
+        SET username=%s,
+            bio=%s,
+            profile_pic=%s
+        WHERE id=%s
+    """, (username, bio, profile_pic, user_id))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return jsonify({"message": "Profile updated successfully"})
+
+@app.route("/follow", methods=["POST"])
+def follow():
+    data = request.get_json()
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO followers (follower_id, following_id)
+        VALUES (%s, %s)
+    """, (data["follower_id"], data["following_id"]))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"message": "Followed"})
+    
 
 if __name__ == '__main__':
     app.run(debug=True)
