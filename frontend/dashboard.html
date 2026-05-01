@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Eco App Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .tab { display: none; }
+        .tab.active { display: block; }
+        .tab-buttons button { margin-right: 5px; }
+
+        .post {
+            background: white;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px;
+            width: 300px;
+        }
+
+        .post img {
+            max-width: 100%;
+            margin-top: 10px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Eco App Dashboard</h1>
+    <p id="welcome"></p>
+
+    <div class="tab-buttons">
+        <button onclick="showTab('home')">Home Feed</button>
+        <button onclick="showTab('tasks')">Personal Achievements</button>
+        <button onclick="showTab('goals')">Goals</button>
+    </div>
+
+    <!-- HOME FEED -->
+    <div id="home" class="tab active">
+        <h2>Community Feed</h2>
+
+        <!-- POST INPUT -->
+        <input type="text" id="new-post" placeholder="What did you do for the environment?">
+        <input type="text" id="new-image" placeholder="Image URL (optional)">
+        <button id="post-btn">Post</button>
+
+        <!-- FEED -->
+        <div id="feed"></div>
+    </div>
+
+    <!-- TASKS -->
+    <div id="tasks" class="tab">
+        <h2>Add a Task</h2>
+        <input type="text" id="new-task" placeholder="New Task">
+        <button id="add-task-btn">Add Task</button>
+
+        <h2>Your Tasks</h2>
+        <ul id="tasks-list"></ul>
+    </div>
+
+    <!-- GOALS -->
+    <div id="goals" class="tab">
+        <h2>Goals</h2>
+        <p>Placeholder for goals</p>
+    </div>
+
+    <script src="dashboard.js"></script>
+
+</body>
+</html>

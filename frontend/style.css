@@ -1,0 +1,108 @@
+/* Import font */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+body {
+    font-family: 'Poppins', sans-serif;
+
+    background-image: 
+        linear-gradient(rgba(0, 40, 20, 0.55), rgba(0, 40, 20, 0.55)),
+        url("Index background.jpg");
+
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+
+    margin: 0;
+}
+
+/* Main Card */
+.welcome-card {
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(14px);
+    padding: 40px;
+    border-radius: 18px;
+    width: 360px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+
+/* Title */
+h1 {
+    color: #e8f5e9;
+    margin-bottom: 5px;
+}
+
+.tagline {
+    color: #b2dfdb;
+    font-size: 0.9rem;
+    margin-bottom: 25px;
+}
+
+/* Layout */
+.auth-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+h2 {
+    color: #ffffff;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+}
+
+/* Divider */
+.divider {
+    color: #aaa;
+    font-size: 0.8rem;
+}
+
+/* Inputs */
+input {
+    width: 100%;
+    padding: 10px;
+    margin: 6px 0;
+    border-radius: 8px;
+    border: none;
+    outline: none;
+
+    background: rgba(255, 255, 255, 0.9);
+}
+
+/* Buttons */
+button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 8px;
+
+    background: #2e7d32;
+    border: none;
+    border-radius: 8px;
+
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    background: #1b5e20;
+}
+
+#forgotpass {
+    color: greenyellow;
+}
+
+#signup {
+    color: greenyellow;
+}
+#resetpass {
+    color: greenyellow;
+    font-size: 0.95rem;
+}
