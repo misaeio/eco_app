@@ -7,84 +7,15 @@ import re #for email pattern validation
 from sendgrid import SendGridAPIClient #for sending emails for forgot PW
 from sendgrid.helpers.mail import Mail 
 
-
 app = Flask(__name__)
 CORS(app)
 
-# TEST ROUTE
+# ================= HOME =================
 @app.route('/')
 def home():
     return "Backend is running!"
 
-# SIGNUP
-
-#validates email format - throws error if the format is off
 email_pattern = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
-
-
-@app.route('/signup', methods=['POST'])
-def signup():
-    data = request.get_json()
-    username = data['username']
-    password = data['password']
-
-    hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    try:
-        cursor.execute(
-            "INSERT INTO users (username, password) VALUES (%s, %s)",
-            (username, hashed)
-        )
-        conn.commit()
-
-        cursor.execute("SELECT id FROM users WHERE username = %s", (username,))
-        user = cursor.fetchone()
-
-        return jsonify({
-            "message": "User created",
-            "user_id": user['id']
-        })
-
-    except:
-        return jsonify({"error": "Username already exists"})
-    
-# LOGIN
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    # Find the user
-    cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
-    user = cursor.fetchone()
-    
-    cursor.close()
-    conn.close()
-
-    if user:
-        # Check if password matches
-        stored_password = user['password']
-        if isinstance(stored_password, str):
-            stored_password = stored_password.encode('utf-8')
-            
-        if bcrypt.checkpw(password.encode('utf-8'), stored_password):
-            return jsonify({
-                "message": "Login successful",
-                "user_id": user['id'],
-                "username": user['username']
-            }), 200
-        else:
-            return jsonify({"error": "Invalid password"})
-    else:
-        
-        return jsonify({"error": "User not found"})
 
 # FORGOT PASSWORD ROUTE
 @app.route('/forgot-password', methods=['POST'])
@@ -191,124 +122,157 @@ def send_email(to_email, token):
         sg.send(message)
     except Exception as error:
         print("Something went wrong with the email!: " + str(error))
-
-# ADD TASK
-@app.route('/tasks', methods=['POST'])
-def add_task():
+# ================= SIGNUP =================
+@app.route('/signup', methods=['POST'])
+def signup():
     data = request.get_json()
-    title = data['task']
-    user_id = data['user_id']
+    username = data['username']
+    password = data['password']
 
-    conn = get_connection()
-    cursor = conn.cursor()
+    hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
-    cursor.execute("INSERT INTO tasks (title, user_id) VALUES (%s, %s)", (title, user_id))
-    conn.commit()
-
-    return jsonify({"message": "Task added"})
-
-# GET TASKS
-@app.route('/tasks/<int:user_id>', methods=['GET'])
-def get_tasks(user_id):
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("SELECT * FROM tasks WHERE user_id = %s", (user_id,))
-    tasks = cursor.fetchall()
+    try:
+        cursor.execute(
+            "INSERT INTO users (username, password) VALUES (%s, %s)",
+            (username, hashed)
+        )
+        conn.commit()
 
-    return jsonify(tasks)
+        cursor.execute("SELECT id FROM users WHERE username = %s", (username,))
+        user = cursor.fetchone()
 
-# DELETE TASK
-@app.route('/tasks/<int:task_id>', methods=['DELETE'])
-def delete_task(task_id):
-    conn = get_connection()
-    cursor = conn.cursor()
+        return jsonify({
+            "message": "User created",
+            "user_id": user['id']
+        })
 
-    cursor.execute("DELETE FROM tasks WHERE id = %s", (task_id,))
-    conn.commit()
-
-    return jsonify({"message": "Task deleted"})
-
-#CREATE POSTS
-@app.route('/posts', methods=['POST'])
-def create_post():
-    data = request.get_json()
+    except:
+        return jsonify({"error": "Username already exists"})
     
-    user_id = data['user_id']
-    content = data.get('content', " ")
-    image_url = data.get('image_url', None)
+#login
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
 
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        INSERT INTO posts (user_id, content, image_url)
-        VALUES (%s, %s, %s)
-    """, (user_id, content, image_url))
-    conn.commit()
-
-    return jsonify({"message": "Post Created"})
-
-#GET POSTS
-@app.route("/posts", methods=["GET"])
-def get_posts():
     conn = get_connection()
     cur = conn.cursor(dictionary=True)
 
+    cur.execute("SELECT * FROM users WHERE username=%s", (data['username'],))
+    user = cur.fetchone()
+
+    if not user:
+        return jsonify({"error": "User not found"})
+
+    stored = user['password']
+    if isinstance(stored, str):
+        stored = stored.encode()
+
+    if bcrypt.checkpw(data['password'].encode(), stored):
+        return jsonify({
+            "user_id": user['id'],
+            "username": user['username']
+        })
+
+    return jsonify({"error": "Wrong password"})
+
+
+# posts
+@app.route('/posts', methods=['GET'])
+def get_posts():
+    conn = get_connection()
+    cur = conn.cursor()
+
     cur.execute("""
-        SELECT 
-            posts.id,
-            posts.content,
-            posts.image_url,
-            posts.user_id,
-            users.username,
-            users.profile_pic
+        SELECT posts.id, posts.user_id, posts.content, posts.image_url,
+               users.username, users.profile_pic
         FROM posts
         JOIN users ON posts.user_id = users.id
         ORDER BY posts.id DESC
     """)
 
-    posts = cur.fetchall()
+    rows = cur.fetchall()
 
-    cur.close()
-    conn.close()
+    return jsonify([
+        {
+            "id": r[0],
+            "user_id": r[1],
+            "content": r[2],
+            "image_url": r[3],
+            "username": r[4],
+            "profile_pic": r[5]
+        }
+        for r in rows
+    ])
 
-    return jsonify(posts)
 
-@app.route('/posts/<int:post_id>/likes', methods=['GET'])
-def get_likes(post_id):
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    cursor.execute(
-        "SELECT COUNT(*) as count FROM likes WHERE post_id=%s",
-        (post_id,)
-    )
-
-    return jsonify(cursor.fetchone())
-
-@app.route('/posts/<int:post_id>/comments', methods=['POST'])
-def add_comment(post_id):
+@app.route('/posts', methods=['POST'])
+def create_post():
     data = request.get_json()
 
     conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
+    cur = conn.cursor()
 
-    cursor.execute("""
-        INSERT INTO comments (post_id, user_id, comment)
+    cur.execute("""
+        INSERT INTO posts (user_id, content, image_url)
         VALUES (%s, %s, %s)
-    """, (post_id, data['user_id'], data['comment']))
+    """, (
+        data['user_id'],
+        data.get('content', ''),
+        data.get('image_url', '')
+    ))
 
     conn.commit()
+    return jsonify({"message": "Post created"})
 
-    return jsonify(cursor.fetchone())
 
+# likes
+@app.route('/posts/<int:post_id>/likes', methods=['GET'])
+def get_likes(post_id):
+    conn = get_connection()
+    cur = conn.cursor(dictionary=True)
+
+    cur.execute("SELECT COUNT(*) AS count FROM likes WHERE post_id=%s", (post_id,))
+    return jsonify(cur.fetchone())
+
+
+@app.route('/posts/<int:post_id>/like', methods=['POST'])
+def like_post(post_id):
+    data = request.get_json()
+    user_id = data['user_id']
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT 1 FROM likes
+        WHERE post_id=%s AND user_id=%s
+    """, (post_id, user_id))
+
+    if cur.fetchone():
+        conn.close()
+        return jsonify({"message": "already liked"})
+
+    cur.execute("""
+        INSERT INTO likes (post_id, user_id)
+        VALUES (%s, %s)
+    """, (post_id, user_id))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"message": "liked"})
+
+
+# comments
 @app.route('/posts/<int:post_id>/comments', methods=['GET'])
 def get_comments(post_id):
     conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
+    cur = conn.cursor(dictionary=True)
 
-    cursor.execute("""
+    cur.execute("""
         SELECT comments.comment, users.username
         FROM comments
         JOIN users ON comments.user_id = users.id
@@ -316,74 +280,64 @@ def get_comments(post_id):
         ORDER BY comments.created_at ASC
     """, (post_id,))
 
-    return jsonify(cursor.fetchall())
+    return jsonify(cur.fetchall())
 
-
-#GET PROFILE
-@app.route("/profile/<int:user_id>")
-def get_profile(user_id):
-    conn = get_connection()
-    cur = conn.cursor(dictionary=True)
-
-    cur.execute("""
-        SELECT id, username, bio, profile_pic, followers_count, following_count
-        FROM users
-        WHERE id=%s
-    """, (user_id,))
-
-    user = cur.fetchone()
-    conn.close()
-
-    return jsonify(user)
-
-#MAKE USER PROFILE
-app.route('/profile/<int:user_id>', methods = ['PUT'])
-def user_profile(user_id):
-    data = request.get_json
-
-    username = data['username']
-    bio = data['bio']
-    profile_pic = data['profile_pic']
-
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""UPDATE users
-                   SET username = %s, bio = %s, profile_pic = %s
-                   WHERE id = %s""", 
-                   (username, bio, profile_pic, user_id))
-    
-    conn.commit()
-
-    return jsonify({"message": "Profile Updated"})
-
-#UPDATE PROFILE
-@app.route("/profile", methods=["POST"])
-def update_profile():
+#post Comments
+@app.route('/posts/<int:post_id>/comments', methods=['POST'])
+def add_comment(post_id):
     data = request.get_json()
-
-    user_id = data["user_id"]
-    username = data["username"]
-    bio = data["bio"]
-    profile_pic = data["profile_pic"]
 
     conn = get_connection()
     cur = conn.cursor()
 
     cur.execute("""
-        UPDATE users
-        SET username=%s,
-            bio=%s,
-            profile_pic=%s
-        WHERE id=%s
-    """, (username, bio, profile_pic, user_id))
+        INSERT INTO comments (post_id, user_id, comment)
+        VALUES (%s, %s, %s)
+    """, (post_id, data['user_id'], data['comment']))
 
     conn.commit()
-    cur.close()
-    conn.close()
+    return jsonify({"message": "comment added"})
 
-    return jsonify({"message": "Profile updated successfully"})
 
+# profile
+@app.route('/user/<int:user_id>')
+def get_user(user_id):
+    current_user_id = request.args.get("current_user_id")
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT username, bio, profile_pic
+        FROM users
+        WHERE id=%s
+    """, (user_id,))
+    user = cur.fetchone()
+
+    cur.execute("SELECT COUNT(*) FROM follows WHERE following_id=%s", (user_id,))
+    followers = cur.fetchone()[0]
+
+    cur.execute("SELECT COUNT(*) FROM follows WHERE follower_id=%s", (user_id,))
+    following = cur.fetchone()[0]
+
+    cur.execute("""
+        SELECT 1 FROM follows
+        WHERE follower_id=%s AND following_id=%s
+    """, (current_user_id, user_id))
+
+    is_following = cur.fetchone() is not None
+
+    return jsonify({
+        "username": user[0],
+        "bio": user[1],
+        "profile_pic": user[2],
+        "followers": followers,
+        "following": following,
+        "is_following": is_following
+    })
+
+
+# follow
 @app.route("/follow", methods=["POST"])
 def follow():
     data = request.get_json()
@@ -392,15 +346,51 @@ def follow():
     cur = conn.cursor()
 
     cur.execute("""
-        INSERT INTO followers (follower_id, following_id)
+        INSERT INTO follows (follower_id, following_id)
         VALUES (%s, %s)
     """, (data["follower_id"], data["following_id"]))
 
     conn.commit()
     conn.close()
 
-    return jsonify({"message": "Followed"})
-    
+    return jsonify({"message": "followed"})
+
+
+@app.route("/unfollow", methods=["POST"])
+def unfollow():
+    data = request.get_json()
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        DELETE FROM follows
+        WHERE follower_id=%s AND following_id=%s
+    """, (data["follower_id"], data["following_id"]))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"message": "unfollowed"})
+
+
+@app.route('/profile', methods=['POST'])
+def update_profile():
+    data = request.get_json()
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE users
+        SET username=%s, bio=%s, profile_pic=%s
+        WHERE id=%s
+    """, (data['username'], data['bio'], data['profile_pic'], data['user_id']))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"message": "updated"})
 
 if __name__ == '__main__':
     app.run(debug=True)
