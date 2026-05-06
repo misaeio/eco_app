@@ -5,7 +5,8 @@ import bcrypt
 import uuid #random string generator for password reset keys
 import re #for email pattern validation
 from sendgrid import SendGridAPIClient #for sending emails for forgot PW
-from sendgrid.helpers.mail import Mail 
+from sendgrid.helpers.mail import Mail
+import requests
 
 app = Flask(__name__)
 CORS(app)
@@ -391,6 +392,83 @@ def update_profile():
     conn.close()
 
     return jsonify({"message": "updated"})
+@app.route('/recycling-centers', methods=['POST'])
+def get_recycling_centers():
+    # finds 3 recycling centers within 20 miles of zip code
+    data = request.get_json()
+    zip_code = data.get('zip_code')
+
+    if not zip_code:
+        return jsonify({"error": "Zip code is required"}), 400
+
+    url = f"https://nominatim.openstreetmap.org/search?q={zip_code},USA&format=json&limit=1"
+    headers = {
+        "User-Agent": "EcoApp/1.0",
+        "From": "aygonzalez@mail.bradley.edu"
+    }
+
+    try:
+        response = requests.get(url, headers=headers)
+        geo_data = response.json()
+
+        if not geo_data:
+            return jsonify({"error": "ZIP code not found. Please review, enter valid ZIP code and try again."}), 404
+
+        lat = float(geo_data[0]["lat"])
+        lon = float(geo_data[0]["lon"])
+
+        query = f'[out:json];node["amenity"="recycling"](around:32187,{lat},{lon});out body;' # searches within 20 mile  , 32187 meters is 20 miles
+        overpass_response = requests.post(
+            "https://overpass.kumi.systems/api/interpreter",
+            data=query,
+            headers={"Content-Type": "text/plain"}
+        )
+
+        centers = []
+        for element in overpass_response.json().get("elements", []):
+            tags = element.get("tags", {})
+            center_lat = element.get("lat")
+            center_lon = element.get("lon")
+
+            if center_lat and center_lon:
+                name = tags.get("name") or "Recycling Center"
+                street = tags.get("addr:street", "")
+                city = tags.get("addr:city", "")
+
+
+                if street and city:
+                    address = f"{street}, {city}"
+                elif street:
+                    address = street
+                elif city:
+                    address = city
+                else:
+                    address = "View on Google Maps"
+                # checks whats available to display and displays full address if it can
+                maps_url = f"https://www.google.com/maps?q={center_lat},{center_lon}"
+
+                centers.append({
+                    "name": name,
+                    "address": address,
+                    "maps_url": maps_url,
+                    "latitude": center_lat,
+                    "longitude": center_lon
+                })
+
+                if len(centers) >= 3:
+                    break
+
+        if not centers:
+            return jsonify({"error": "No recycling centers found within 20 miles"}), 404
+
+        return jsonify({
+            "centers": centers,
+            "zip_code": zip_code
+        })
+
+    except Exception as e:
+        print(f"Error in recycling centers: {e}")
+        return jsonify({"error": "Unable to find recycling centers"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
