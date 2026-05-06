@@ -1,107 +1,79 @@
-const backendURL = "http://127.0.0.1:5000";
+ const backendURL = "http://127.0.0.1:5000";
 
 // USER INFO
 const params = new URLSearchParams(window.location.search);
 const currentUserId = params.get('user_id');
 const currentUsername = params.get('username');
 
-// WELCOME
-document.getElementById('welcome').innerText =
-    "Welcome " + currentUsername;
+let viewingUserId = currentUserId;
 
-// INIT
-window.addEventListener('DOMContentLoaded', () => {
-    getTasks();
+// safety check
+if (!currentUserId) {
+    console.error("Missing user_id in URL");
+    window.location.href = "login.html";
+}
+
+// init
+window.addEventListener("DOMContentLoaded", () => {
     loadFeed();
-    loadProfile();
+    loadProfile(currentUserId);
+    loadUserHeader();
 
-    document.getElementById('add-task-btn').addEventListener('click', addTask);
-    document.getElementById('post-btn').addEventListener('click', createPost);
+    document.getElementById("post-btn").onclick = createPost;
 });
-// TAB SWITCH
-function showTab(tabId) {
-    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
-}
-// TASKS
-function getTasks() {
-    fetch(`${backendURL}/tasks/${currentUserId}`)
-        .then(res => res.json())
-        .then(data => {
-            const list = document.getElementById('tasks-list');
-            list.innerHTML = "";
 
-            data.forEach(t => {
-                const li = document.createElement('li');
-                li.textContent = t.title + " ";
-
-                const btn = document.createElement('button');
-                btn.textContent = "x";
-                btn.onclick = () => deleteTask(t.id);
-
-                li.appendChild(btn);
-                list.appendChild(li);
-            });
-        });
-}
-
-function addTask() {
-    const task = document.getElementById('new-task').value.trim();
-    if (!task) return alert("Task cannot be empty");
-
-    fetch(`${backendURL}/tasks`, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-            task,
-            user_id: currentUserId
+// welcome
+function loadUserHeader() {
+    fetch(`${backendURL}/user/${currentUserId}?current_user_id=${currentUserId}`)
+        .then(r => r.json())
+        .then(u => {
+            document.getElementById("welcome").innerText =
+                "Welcome " + (u.username || "User");
         })
-    }).then(() => {
-        document.getElementById('new-task').value = "";
-        getTasks();
-    });
+        .catch(err => console.error("Header error:", err));
 }
 
-function deleteTask(id) {
-    fetch(`${backendURL}/tasks/${id}`, {
-        method: "DELETE"
-    }).then(() => getTasks());
+// tab switch
+function showTab(tabId) {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.getElementById(tabId).classList.add("active");
 }
-// POSTS + FEED
+
+// feed
 function loadFeed() {
     fetch(`${backendURL}/posts`)
-        .then(res => res.json())
+        .then(r => r.json())
         .then(posts => {
-            const feed = document.getElementById('feed');
+            const feed = document.getElementById("feed");
             feed.innerHTML = "";
 
             posts.forEach(post => {
-                const div = document.createElement('div');
+                const div = document.createElement("div");
 
                 div.innerHTML = `
-                    <div style="display:flex; gap:10px; align-items:center; margin-bottom:8px;">
-                        <img src="${post.profile_pic || 'default.png'}" 
-                             width="40" height="40" 
-                             style="border-radius:50%; object-fit:cover;">
+                    <div onclick="viewProfile(${post.user_id})"
+                         style="cursor:pointer; display:flex; gap:10px; align-items:center;">
 
-                        <strong>${post.username}</strong>
+                        <img src="${post.profile_pic || 'default.png'}"
+                             width="40" height="40"
+                             style="border-radius:50%">
+
+                        <b>${post.username}</b>
                     </div>
 
-                    <p>${post.content}</p>
+                    <p>${post.content || ""}</p>
 
-                    ${post.image_url ? `<img src="${post.image_url}" width="200" style="border-radius:8px;">` : ""}
+                    ${post.image_url ? `<img src="${post.image_url}" width="200">` : ""}
 
-                    <div style="margin-top:8px;">
-                        <button onclick="likePost(${post.id})">❤️ Like</button>
-                        <span id="likes-${post.id}">0</span>
+                    <button onclick="likePost(${post.id})">❤️ Like</button>
+                    <span id="likes-${post.id}">0</span>
 
-                        <button onclick="toggleComments(${post.id})">💬 Comments</button>
-                    </div>
+                    <button onclick="toggleComments(${post.id})">💬</button>
 
                     <div id="comments-${post.id}" style="display:none;">
-                        <input id="comment-input-${post.id}" placeholder="Write comment">
-                        <button onclick="addComment(${post.id})">Post</button>
-                        <ul id="comment-list-${post.id}"></ul>
+                        <input id="comment-${post.id}" placeholder="Comment">
+                        <button onclick="addComment(${post.id})">Send</button>
+                        <ul id="list-${post.id}"></ul>
                     </div>
                 `;
 
@@ -110,101 +82,154 @@ function loadFeed() {
                 loadLikes(post.id);
                 loadComments(post.id);
             });
-        });
+        })
+        .catch(err => console.error("Feed error:", err));
 }
-// CREATE POST
+
+// create posts
 function createPost() {
-    const content = document.getElementById('new-post').value.trim();
-    const imageUrl = document.getElementById('new-image').value.trim();
-
-    if (!content && !imageUrl) {
-        return alert("Post cannot be empty");
-    }
-
     fetch(`${backendURL}/posts`, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
             user_id: currentUserId,
-            content,
-            image_url: imageUrl
+            content: document.getElementById("new-post").value,
+            image_url: document.getElementById("new-image").value
         })
-    }).then(() => {
-        document.getElementById('new-post').value = "";
-        document.getElementById('new-image').value = "";
-        loadFeed();
-    });
+    })
+    .then(() => loadFeed())
+    .catch(err => console.error("Post error:", err));
 }
-// LIKES
+
+// likes
 function likePost(postId) {
     fetch(`${backendURL}/posts/${postId}/like`, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({ user_id: currentUserId })
     })
-    .then(res => res.json())
-    .then(() => loadLikes(postId));
+    .then(() => loadLikes(postId))
+    .catch(err => console.error("Like error:", err));
 }
 
 function loadLikes(postId) {
     fetch(`${backendURL}/posts/${postId}/likes`)
-        .then(res => res.json())
-        .then(data => {
-            document.getElementById(`likes-${postId}`).innerText = data.count;
-        });
+        .then(r => r.json())
+        .then(d => {
+            document.getElementById(`likes-${postId}`).innerText = d.count || 0;
+        })
+        .catch(err => console.error("Likes load error:", err));
 }
 
-// COMMENTS
-function toggleComments(postId) {
-    const box = document.getElementById(`comments-${postId}`);
-    box.style.display = box.style.display === "none" ? "block" : "none";
+// comments
+function toggleComments(id) {
+    const el = document.getElementById(`comments-${id}`);
+    if (!el) return;
+    el.style.display = el.style.display === "none" ? "block" : "none";
 }
 
-function addComment(postId) {
-    const input = document.getElementById(`comment-input-${postId}`);
-    const text = input.value.trim();
+function addComment(id) {
+    const input = document.getElementById(`comment-${id}`);
 
-    if (!text) return;
-
-    fetch(`${backendURL}/posts/${postId}/comments`, {
+    fetch(`${backendURL}/posts/${id}/comments`, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
             user_id: currentUserId,
-            comment: text
+            comment: input.value
         })
-    }).then(() => {
-        input.value = "";
-        loadComments(postId);
-    });
+    })
+    .then(() => loadComments(id))
+    .catch(err => console.error("Comment error:", err));
 }
 
-function loadComments(postId) {
-    fetch(`${backendURL}/posts/${postId}/comments`)
-        .then(res => res.json())
+function loadComments(id) {
+    fetch(`${backendURL}/posts/${id}/comments`)
+        .then(r => r.json())
         .then(comments => {
-            const list = document.getElementById(`comment-list-${postId}`);
+            const list = document.getElementById(`list-${id}`);
+            if (!list) return;
+
             list.innerHTML = "";
 
             comments.forEach(c => {
-                const li = document.createElement('li');
-                li.textContent = `${c.username}: ${c.comment}`;
+                const li = document.createElement("li");
+                li.innerText = `${c.username}: ${c.comment}`;
                 list.appendChild(li);
             });
-        });
+        })
+        .catch(err => console.error("Load comments error:", err));
 }
 
-function loadProfile(){
-            fetch(`${backendURL}/profile/${currentUserId}`)
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('profile-username').value = data.username || "";
-                document.getElementById('profile-bio').value = data.bio || "";
-                document.getElementById('profile-pic').value = data.profile_pic || "";
-            });
-        }
+// profile
+function viewProfile(userId) {
+    viewingUserId = userId;
 
+    fetch(`${backendURL}/user/${userId}?current_user_id=${currentUserId}`)
+        .then(r => r.json())
+        .then(u => {
 
+            showTab("profile");
+
+            document.getElementById("profile-username-display").innerText = u.username || "";
+            document.getElementById("profile-bio-display").innerText = u.bio || "";
+            document.getElementById("profile-pic-display").src = u.profile_pic || "default.png";
+
+            document.getElementById("followers").innerText = "Followers: " + (u.followers || 0);
+            document.getElementById("following").innerText = "Following: " + (u.following || 0);
+
+            const btn = document.getElementById("follow-btn");
+
+            const editSection = document.getElementById("edit-section");
+
+            if (String(userId) === String(currentUserId)) {
+         
+                btn.style.display = "none";
+                editSection.style.display = "block";
+            } else {
+               
+                btn.style.display = "block";
+                editSection.style.display = "none";
+            }
+
+            btn.innerText = u.is_following ? "Unfollow" : "Follow";
+            btn.onclick = () => toggleFollow(userId, u.is_following);
+        })
+        .catch(err => console.error("Profile error:", err));
+}
+
+//  follow
+function toggleFollow(userId, isFollowing) {
+    const url = isFollowing ? "/unfollow" : "/follow";
+
+    fetch(`${backendURL}${url}`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            follower_id: currentUserId,
+            following_id: userId
+        })
+    })
+    .then(() => viewProfile(userId))
+    .catch(err => console.error("Follow error:", err));
+}
+
+function showTab(tabId) {
+    document.querySelectorAll(".tab").forEach(tab => {
+        tab.classList.remove("active");
+    });
+
+    const selected = document.getElementById(tabId);
+    if (selected) {
+        selected.classList.add("active");
+    }
+}
+
+function openMyProfile() {
+    viewProfile(currentUserId);
+}
+
+//saveProfile
 function saveProfile() {
     const username = document.getElementById('profile-username').value;
     const bio = document.getElementById('profile-bio').value;
@@ -212,7 +237,7 @@ function saveProfile() {
 
     fetch(`${backendURL}/profile`, {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             user_id: currentUserId,
             username,
@@ -224,15 +249,20 @@ function saveProfile() {
     .then(data => {
         alert(data.message || data.error);
 
-       document.getElementById('welcome').innerText = "Welcome " + username;
+        document.getElementById('welcome').innerText = "Welcome " + username;
 
-const newUrl = `dashboard.html?user_id=${currentUserId}&username=${encodeURIComponent(username)}`;
-window.history.replaceState({}, "", newUrl);
+        const newUrl = `dashboard.html?user_id=${currentUserId}&username=${encodeURIComponent(username)}`;
+        window.history.replaceState({}, "", newUrl);
 
-        loadFeed();
+        viewProfile(currentUserId);
+    })
+    .catch(err => {
+        console.error("Save profile error:", err);
+        alert("Failed to update profile");
     });
 }
 
+//updateProfile
 function updateProfile(){
     const username = document.getElementById("edit-username").value;
     const bio = document.getElementById("edit-bio").value;
@@ -254,6 +284,7 @@ function updateProfile(){
     });
 }
 
+//loadProfile
 function loadProfile() {
     fetch(`${backendURL}/profile/${currentUserId}`)
         .then(res => res.json())
@@ -267,13 +298,5 @@ function loadProfile() {
         });
 }
 
-function showTab(tabId) {
-    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
-
-    if (tabId === "profile") {
-        loadProfile();
-    }
-}
 
 
