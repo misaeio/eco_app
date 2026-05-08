@@ -298,5 +298,54 @@ function loadProfile() {
         });
 }
 
+async function searchRecyclingCenters() {
+    const zipCode = document.getElementById('zipCode').value;
+    const resultsDiv = document.getElementById('recycling-results');
+
+    if (!zipCode || zipCode.length !== 5 || isNaN(zipCode)) {
+        resultsDiv.innerHTML = '<div class="error">Please enter a valid ZIP code</div>';
+        return;
+    }
+
+    resultsDiv.innerHTML = '<div class="loading"> Searching...</div>';
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/recycling-centers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ zip_code: zipCode })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            resultsDiv.innerHTML = `<div class="error"> ${data.error}</div>`;
+            return;
+        }
+
+        if (!data.centers || data.centers.length === 0) {
+            resultsDiv.innerHTML = '<div class="error"> No recycling centers found.</div>';
+            return;
+        }
+
+        let html = `<h3>Found ${data.centers.length} center(s) near ${data.zip_code}:</h3>`;
+
+        data.centers.forEach((center, index) => {
+            html += `
+                <div class="center-card">
+                    <div class="center-name">${index + 1}. ${center.name}</div>
+                    <div> ${center.address}</div>
+                    <div>🗺️ <a href="https://www.google.com/maps?q=${center.latitude},${center.longitude}" target="_blank">Open in Google Maps</a></div>
+                </div>
+            `;
+        });
+
+        resultsDiv.innerHTML = html;
+
+    } catch (error) {
+        resultsDiv.innerHTML = '<div class="error"> Unable to connect to server.</div>';
+    }
+}
+
 
 
