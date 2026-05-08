@@ -33,6 +33,7 @@
 
 <div class="tab-buttons">
     <button onclick="showTab('home')">Home Feed</button>
+    <button onclick="showTab('recycling')">Search Local Recycling</button>
     <button onclick="openMyProfile()">Profile</button>
 </div>
 
@@ -47,6 +48,18 @@
     <div id="feed"></div>
 </div>
 
+<!-- RECYCLING  -->
+<div id="recycling" class="tab">
+    <h2>♻️ Find Local Recycling Centers</h2>
+
+    <div class="search-box">
+        <label for="zipCode" style="display: block; margin-bottom: 10px; font-weight: bold;">Enter your ZIP code:</label>
+        <input type="text" id="zipCode" placeholder="e.g., 90210" maxlength="5">
+        <button onclick="searchRecyclingCenters()">Search Within 20 Miles</button>
+    </div>
+
+    <div id="recycling-results"></div>
+</div>
 
 <!-- PROFILE -->
 <div id="profile" class="tab">
@@ -75,8 +88,8 @@
         <button onclick="saveProfile()">Save</button>
     </div>
 
-  
-    
+
+
 </div>
 
 <script src="dashboard.js"></script>
