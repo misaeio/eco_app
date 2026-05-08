@@ -6,7 +6,7 @@ import uuid #random string generator for password reset keys
 import re #for email pattern validation
 from sendgrid import SendGridAPIClient #for sending emails for forgot PW
 from sendgrid.helpers.mail import Mail
-import requests
+import requests #for openstreetmapapi
 
 app = Flask(__name__)
 CORS(app)
@@ -404,7 +404,7 @@ def get_recycling_centers():
     url = f"https://nominatim.openstreetmap.org/search?q={zip_code},USA&format=json&limit=1"
     headers = {
         "User-Agent": "EcoApp/1.0",
-        "From": "aygonzalez@mail.bradley.edu"
+        "From": "aygonzalez@mail.bradley.edu" #IMPORTANT tag for request from API that gives identifying information
     }
 
     try:
@@ -443,8 +443,7 @@ def get_recycling_centers():
                 elif city:
                     address = city
                 else:
-                    address = "View on Google Maps"
-                # checks whats available to display and displays full address if it can
+                    address = "View on Google Maps" # checks whats available to display and displays full address if it can
                 maps_url = f"https://www.google.com/maps?q={center_lat},{center_lon}"
 
                 centers.append({
